@@ -61,7 +61,8 @@ public class Tokenizer {
 
     private void tokenizeDocument() {
         tokens = new ArrayList<>();
-        tokens.addAll(List.of(fileContents.replaceAll("[^a-zA-Z0-9]", " ").toLowerCase().split("\\s+")));
+
+        tokens.addAll(List.of(fileContents.replaceAll("[^a-zA-Z]", " ").toLowerCase().split("\\s+")));
     }
 
 

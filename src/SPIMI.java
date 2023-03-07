@@ -1,7 +1,7 @@
 import com.sun.jdi.ByteValue;
+import com.sun.security.jgss.GSSUtil;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -43,8 +43,11 @@ public class SPIMI {
         }
 
         createBlocks();
-        mergeAllBlocks();
-        writeDictionary(dictionary);
+        try {
+            mergeAllBlocks();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Map<String,TreeSet<Integer>> readBlockAndConvertToDictionary(Path filePath){
@@ -68,42 +71,100 @@ public class SPIMI {
 
         return blockDictionary;
     }
-    private void mergeAllBlocks(){
+    private void mergeAllBlocks() throws IOException {
+        System.out.println("Merging blocks");
 
+        ArrayList<BufferedReader> readers = new ArrayList<>();
+        ArrayList<String> currLines = new ArrayList<>();
+        BufferedWriter writer;
+        try {
+            writer = new BufferedWriter(new FileWriter("src/dictionary.txt"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-
-        this.dictionary = new LinkedHashMap<>();
         for(int i = 1;i<=this.blockNumber;i++){
+            BufferedReader reader;
+            try {
+                reader = new BufferedReader(new FileReader("src/blocks/block"+i+".txt"));
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+            readers.add(reader);
+            try {
+                currLines.add(reader.readLine());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
-            Map<String,TreeSet<Integer>> blockDictionary = this.readBlockAndConvertToDictionary(Path.of("src/blocks/block"+i+".txt"));
-            Map<String,TreeSet<Integer>> mergedBlocks = new LinkedHashMap<>();
+        boolean flag = true;
+        while (flag) {
+            Integer min = 0;
+            String minString = getTermFromLine(currLines.get(0));
+            for (int i = 0; i < readers.size();i++){
+                if (readers.get(i)!=null){
+                    if (minString==null){
+                        minString = getTermFromLine(currLines.get(i));
+                    }
+                    else {
+                        String term = getTermFromLine(currLines.get(i));
+                        if (term.compareTo(minString)<0){
+                            min = i;
+                            minString = term;
+                        }
+                    }
 
-            Set<String> terms = blockDictionary.keySet();
-
-
-            for(String term : terms){
-
-                if(this.dictionary.get(term)!=null && blockDictionary.get(term)!=null){
-                    TreeSet<Integer> merged = this.dictionary.get(term);
-                    merged.addAll(blockDictionary.get(term));
-                    mergedBlocks.put(term,merged);
-                }else if(this.dictionary.get(term)!=null){
-                    mergedBlocks.put(term,this.dictionary.get(term));
-                }else{
-                    mergedBlocks.put(term,blockDictionary.get(term));
                 }
 
             }
-            this.dictionary = mergedBlocks;
+            TreeSet<Integer> all = new TreeSet<>();
+            flag = false;
+            for (int i = 0; i < readers.size();i++){
+                if (readers.get(i)!=null){
+                    flag = true;
+                    String term = getTermFromLine(currLines.get(i));
+                    if (term.equals(minString)){
+                        all.addAll(getPostingFromLine(currLines.get(i)));
+                        String next;
+                        if ((next = readers.get(i).readLine())!=null){
+                            currLines.set(i,next);
+                        }
+                        else {
+                            readers.set(i,null);
+                            currLines.set(i,null);
+                        }
+                    }
+                }
+
+            }
+            writer.write(minString + " : " + all +"\n");
+
+
+
 
         }
 
+    }
+    private String getTermFromLine(String line){
+        if (line==null)return null;
+        return line.split(" : ")[0];
+    }
+    private TreeSet<Integer> getPostingFromLine(String line){
+        if (line==null)return null;
+        String[] nums = line.split(" : ")[1].replaceAll("\\[", "").replaceAll("]","").split(", ");
+        TreeSet<Integer> res = new TreeSet<>();
+        for (String s: nums){
+            res.add(Integer.valueOf(s));
+        }
+        return res;
     }
 
     private void writeDictionary(Map<String,TreeSet<Integer>> dictionary){
         this.blockNumber++;
 
         Path file = Path.of("src/dictionary.txt");
+
 
         dictionary.remove("");
 
@@ -124,6 +185,7 @@ public class SPIMI {
     }
 
     private void createBlocks(){
+        System.out.println("Creating blocks");
         while (directoryIterator.hasNext())createBlock();
     }
     private void createBlock(){
