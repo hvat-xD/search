@@ -2,6 +2,7 @@ import com.sun.jdi.ByteValue;
 import com.sun.security.jgss.GSSUtil;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -15,9 +16,10 @@ import java.util.stream.Stream;
 public class SPIMI {
     int blockNumber;
     File collectionBase;
-    Map<String, TreeSet<Integer>> dictionary;
+    ArrayList<DictionaryPosition> dictionaryPositions;
     Iterator<Path> directoryIterator;
     Charset encoding = StandardCharsets.UTF_8;
+    int dictionaryEnd;
     int memorySize;
 
     public SPIMI(String path, int memorySize) throws IOException {
@@ -49,6 +51,36 @@ public class SPIMI {
             throw new RuntimeException(e);
         }
     }
+    public ArrayList<String> readAll(){
+        ArrayList<String> words = new ArrayList<>();
+        int last = dictionaryPositions.size();
+        for (int i = 0; i < last - 1; i++){
+            DictionaryPosition cur = dictionaryPositions.get(i);
+            DictionaryPosition nex = dictionaryPositions.get(i+1);
+            words.add(readFromDictionary(cur.bytePos, nex.bytePos-cur.bytePos));
+
+        }
+
+        words.add(readFromDictionary(dictionaryPositions.get(last-1).bytePos, dictionaryEnd -dictionaryPositions.get(last-1).bytePos));
+        return words;
+    }
+    public String readFromDictionary(int posStart, int len){
+        RandomAccessFile randomAccessFile;
+        byte[] bytes = new byte[len];
+        try {
+            randomAccessFile = new RandomAccessFile("src/dictionary.txt","r");
+            randomAccessFile.seek(posStart);
+            randomAccessFile.read(bytes);
+            randomAccessFile.close();
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
+        return new String(bytes,encoding);
+    }
 
     private Map<String,TreeSet<Integer>> readBlockAndConvertToDictionary(Path filePath){
 
@@ -72,13 +104,16 @@ public class SPIMI {
         return blockDictionary;
     }
     private void mergeAllBlocks() throws IOException {
+        dictionaryPositions = new ArrayList<>();
         System.out.println("Merging blocks");
+        int bytePos = 0;
+
 
         ArrayList<BufferedReader> readers = new ArrayList<>();
         ArrayList<String> currLines = new ArrayList<>();
-        BufferedWriter writer;
+        OutputStream outputStream;
         try {
-            writer = new BufferedWriter(new FileWriter("src/dictionary.txt"));
+            outputStream = new FileOutputStream("src/dictionary.txt");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -100,7 +135,6 @@ public class SPIMI {
 
         boolean flag = true;
         while (flag) {
-            Integer min = 0;
             String minString = getTermFromLine(currLines.get(0));
             for (int i = 0; i < readers.size();i++){
                 if (readers.get(i)!=null){
@@ -110,7 +144,6 @@ public class SPIMI {
                     else {
                         String term = getTermFromLine(currLines.get(i));
                         if (term.compareTo(minString)<0){
-                            min = i;
                             minString = term;
                         }
                     }
@@ -133,17 +166,19 @@ public class SPIMI {
                         else {
                             readers.set(i,null);
                             currLines.set(i,null);
+
                         }
                     }
                 }
-
             }
-            writer.write(minString + " : " + all +"\n");
-
-
-
+            if(minString!=null){
+                outputStream.write(minString.getBytes(encoding));
+                dictionaryPositions.add(new DictionaryPosition(bytePos, all));
+                bytePos+=minString.getBytes(encoding).length;
+            }
 
         }
+        dictionaryEnd = bytePos;
 
     }
     private String getTermFromLine(String line){
