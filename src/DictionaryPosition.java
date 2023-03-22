@@ -1,19 +1,12 @@
 import java.util.Set;
 
 public class DictionaryPosition {
-    int bytePos;
-    Set<Integer> positions;
+    int bytePosTerm;
+    int bytePosList;
 
-    public DictionaryPosition(int bytePos, Set<Integer> positions) {
-        this.bytePos = bytePos;
-        this.positions = positions;
+    public DictionaryPosition(int bytePos, int bytePosList) {
+        this.bytePosTerm = bytePos;
+        this.bytePosList = bytePosList;
     }
 
-    public int getBytePos() {
-        return bytePos;
-    }
-
-    public Set<Integer> getPositions() {
-        return positions;
-    }
 }
