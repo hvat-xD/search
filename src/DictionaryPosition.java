@@ -1,6 +1,7 @@
+import java.io.Serializable;
 import java.util.Set;
 
-public class DictionaryPosition {
+public class DictionaryPosition implements Serializable {
     int bytePosTerm;
     int bytePosList;
 

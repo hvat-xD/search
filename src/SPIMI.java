@@ -1,7 +1,10 @@
 import com.sun.jdi.ByteValue;
+import com.sun.management.HotSpotDiagnosticMXBean;
 import com.sun.security.jgss.GSSUtil;
 
+import javax.management.MBeanServer;
 import java.io.*;
+import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -44,11 +47,14 @@ public class SPIMI {
             if (new File("src/changed.txt").exists()){
                 try {
                     DataInputStream dataInputStream = new DataInputStream(new FileInputStream("src/changed.txt"));
-                    Long lastChangedLog = dataInputStream.readLong();
+                    long lastChangedLog = dataInputStream.readLong();
                     if (lastChangedLog != collectionBase.lastModified()){
                         rebuildIndex();
                     }
-                } catch (IOException e) {
+                    else {
+                        deserializePositions();
+                    }
+                } catch (IOException | ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -82,9 +88,36 @@ public class SPIMI {
         createBlocks();
         try {
             mergeAllBlocks();
+            serializePositions();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+    }
+    private void deserializePositions() throws IOException, ClassNotFoundException {
+        ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream("Positions.txt"));
+        dictionaryPositions = (ArrayList<DictionaryPosition>) inputStream.readObject();
+        inputStream.close();
+        inputStream = new ObjectInputStream(new FileInputStream("PostingsEnd.txt"));
+        postingsEnd = (int) inputStream.readObject();
+        inputStream.close();
+        inputStream = new ObjectInputStream(new FileInputStream("DictionaryEnd.txt"));
+        dictionaryEnd = (int) inputStream.readObject();
+        inputStream.close();
+    }
+    private void serializePositions() throws IOException {
+        ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("Positions.txt"));
+        outputStream.writeObject(dictionaryPositions);
+        outputStream.flush();
+        outputStream.close();
+        outputStream = new ObjectOutputStream(new FileOutputStream("PostingsEnd.txt"));
+        outputStream.writeObject(postingsEnd);
+        outputStream.flush();
+        outputStream.close();
+        outputStream = new ObjectOutputStream(new FileOutputStream("DictionaryEnd.txt"));
+        outputStream.writeObject(dictionaryEnd);
+        outputStream.flush();
+        outputStream.close();
     }
 
     public ArrayList<String> getTerms(){
@@ -258,7 +291,7 @@ public class SPIMI {
             Path p = directoryIterator.next();
             //filePaths.add(p);
             docId++;
-            System.out.println("Documents indexed: " + docId);
+            //System.out.println("Documents indexed: " + docId);
             if (p.toString().endsWith(".txt")){
                 tokenizer.setFilename(p);
                 tokenizer.readDocument(encoding);
@@ -307,7 +340,7 @@ public class SPIMI {
 
         Path file = Path.of("src/blocks/block"+block+".txt");
 
-        System.out.println("Writing block "+ block);
+        //System.out.println("Writing block "+ block);
 
 
         dictionary.remove("");

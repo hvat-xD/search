@@ -10,11 +10,12 @@ public class Main {
         long startTime = System.nanoTime();
         SPIMI spimi;
         try {
-            spimi = new SPIMI("src/collection2",6500000 ,true);
+            spimi = new SPIMI("src/collection2",6500000 ,false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         spimi.generateIndex();
+        System.out.println(spimi.getPostings());
         System.out.println((System.nanoTime()-startTime)/1000000000 + " seconds to index");
     }
 }
