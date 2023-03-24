@@ -4,6 +4,7 @@ import com.sun.security.jgss.GSSUtil;
 
 import javax.management.MBeanServer;
 import java.io.*;
+import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -20,6 +21,7 @@ import static java.lang.Math.log;
 
 
 public class SPIMI {
+    Tokenizer tokenizer = new Tokenizer(null);
     int docId = -1;
     int blockNumber;
     File collectionBase;
@@ -28,11 +30,13 @@ public class SPIMI {
     Charset encoding = StandardCharsets.UTF_8;
     int dictionaryEnd;
     int postingsEnd;
-    int memorySize;
+    long memorySize;
     boolean forceBuild;
     //ArrayList<Path> filePaths;
+    long startTime;
 
-    public SPIMI(String path, int memorySize, boolean forceBuild) throws IOException {
+    public SPIMI(String path, long memorySize, boolean forceBuild) throws IOException {
+        this.startTime = System.nanoTime();
         this.dictionaryPositions = new ArrayList<>();
         //this.filePaths = new ArrayList<>();
         this.forceBuild = forceBuild;
@@ -41,6 +45,25 @@ public class SPIMI {
         collectionBase = new File(path);
         if (!collectionBase.isDirectory())throw new NotDirectoryException(path);
         directoryIterator = Files.newDirectoryStream(Path.of(path)).iterator();
+    }
+    public ArrayList<Path> getDocumentsOfPosting(ArrayList<Integer> posting) {
+        ArrayList<Path> paths = new ArrayList<>();
+        try {
+            Iterator<Path> dIter = Files.newDirectoryStream(collectionBase.toPath()).iterator();
+            int docId = 0;
+            Path cur = dIter.next();
+            for (int i = 0; i < posting.size(); i+=2){
+                while(docId!=posting.get(i)){
+                    cur = dIter.next();
+                    docId++;
+                }
+                paths.add(cur);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return paths;
     }
     public void generateIndex() {
         if (!forceBuild){
@@ -59,38 +82,54 @@ public class SPIMI {
                 }
             }
             else {
-                try {
-                    DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream("src/changed.txt"));
-                    dataOutputStream.writeLong(collectionBase.lastModified());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
                 rebuildIndex();
             }
         }
         else rebuildIndex();
     }
 
+    private static long getGarbageCollectionTime() {
+        long collectionTime = 0;
+        for (GarbageCollectorMXBean garbageCollectorMXBean : ManagementFactory.getGarbageCollectorMXBeans()) {
+            collectionTime += garbageCollectorMXBean.getCollectionTime();
+        }
+        return collectionTime;
+    }
+    public ArrayList<Integer> searchWord(String word){
+        int low = 0, high = dictionaryPositions.size()-1;
+        while (low<=high){
+            int mid = low + ((high - low) /2);
+            if (getTerm(mid).compareTo(word) < 0){
+                low = mid+1;
+            }
+            else if(getTerm(mid).compareTo(word)>0){
+                high = mid - 1;
+            }
+            else if(getTerm(mid).equals(word)){
+                return getPosting(mid);
+            }
+        }
+        return new ArrayList<>();
+    }
     private void rebuildIndex() {
+
         try {
+            DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream("src/changed.txt"));
+            dataOutputStream.writeLong(collectionBase.lastModified());
             Files.walk(Path.of("src/blocks"))
                     .sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
                     .forEach(File::delete);
             Files.createDirectories(Path.of("src/blocks"));
+            createBlocks();
+            mergeAllBlocks();
+            serializePositions();
         } catch (IOException e) {
             try {
                 Files.createDirectories(Path.of("src/blocks"));
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
-        }
-        createBlocks();
-        try {
-            mergeAllBlocks();
-            serializePositions();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
 
     }
@@ -119,6 +158,18 @@ public class SPIMI {
         outputStream.flush();
         outputStream.close();
     }
+    public ArrayList<Integer> getPosting(Integer i){
+        if (i == dictionaryPositions.size()-1){
+            return readFromPostings(dictionaryPositions.get(i).bytePosList, postingsEnd - dictionaryPositions.get(i).bytePosList);
+        }
+        return readFromPostings(dictionaryPositions.get(i).bytePosList, dictionaryPositions.get(i+1).bytePosList - dictionaryPositions.get(i).bytePosList);
+    }
+    public String getTerm(Integer i){
+        if (i == dictionaryPositions.size()-1){
+            return readFromDictionary(dictionaryPositions.get(i).bytePosTerm, dictionaryEnd -dictionaryPositions.get(i).bytePosTerm);
+        }
+        return readFromDictionary(dictionaryPositions.get(i).bytePosTerm, dictionaryPositions.get(i+1).bytePosTerm-dictionaryPositions.get(i).bytePosTerm);
+    }
 
     public ArrayList<String> getTerms(){
         ArrayList<String> words = new ArrayList<>();
@@ -143,7 +194,7 @@ public class SPIMI {
         postings.add(readFromPostings(dictionaryPositions.get( dictionaryPositions.size()-1).bytePosList, postingsEnd - dictionaryPositions.get( dictionaryPositions.size()-1).bytePosList));
         return postings;
     }
-    public String readFromDictionary(int posStart, int len){
+    private String readFromDictionary(int posStart, int len){
         RandomAccessFile randomAccessFile;
         byte[] bytes = new byte[len];
         try {
@@ -160,7 +211,7 @@ public class SPIMI {
 
         return new String(bytes,encoding);
     }
-    public ArrayList<Integer> readFromPostings(int posStart, int len){
+    private ArrayList<Integer> readFromPostings(int posStart, int len){
         RandomAccessFile randomAccessFile;
         byte[] bytes = new byte[len];
         try {
@@ -209,51 +260,39 @@ public class SPIMI {
 
         boolean flag = true;
         while (flag) {
+            if (readers.isEmpty())break;
+
             String minString = getTermFromLine(currLines.get(0));
             for (int i = 0; i < readers.size();i++){
-                if (readers.get(i)!=null){
-                    if (minString==null){
-                        minString = getTermFromLine(currLines.get(i));
-                    }
-                    else {
-                        String term = getTermFromLine(currLines.get(i));
-                        if (term.compareTo(minString)<0){
-                            minString = term;
-                        }
-                    }
-
+                String term = getTermFromLine(currLines.get(i));
+                if (term.compareTo(minString)<0) {
+                    minString = term;
                 }
-
             }
             ArrayList<Integer> postings = new ArrayList<>();
-            flag = false;
             for (int i = 0; i < readers.size();i++){
-                if (readers.get(i)!=null){
-                    flag = true;
-                    String term = getTermFromLine(currLines.get(i));
-                    if (term.equals(minString)){
+                String term = getTermFromLine(currLines.get(i));
+                if (term.equals(minString)){
 
-                        postings.addAll(getPostingFromLine(currLines.get(i)));
+                    postings.addAll(getPostingFromLine(currLines.get(i)));
 
-                        String next;
-                        if ((next = readers.get(i).readLine())!=null){
-                            currLines.set(i,next);
-                        }
-                        else {
-                            readers.set(i,null);
-                            currLines.set(i,null);
-
-                        }
+                    String next;
+                    if ((next = readers.get(i).readLine())!=null){
+                        currLines.set(i,next);
                     }
+                    else {
+                        readers.remove(i);
+                        currLines.remove(i);
+
+                    }
+
                 }
             }
-            if(minString!=null){
-                outputDictionary.write(minString.getBytes(encoding));
-                outputPostings.write(encode(postings));
-                dictionaryPositions.add(new DictionaryPosition(bytePosTerm, bytePosList));
-                bytePosTerm+=minString.getBytes(encoding).length;
-                bytePosList+=encode(postings).length;
-            }
+            outputDictionary.write(minString.getBytes(encoding));
+            outputPostings.write(encode(postings));
+            dictionaryPositions.add(new DictionaryPosition(bytePosTerm, bytePosList));
+            bytePosTerm+=minString.getBytes(encoding).length;
+            bytePosList+=encode(postings).length;
 
         }
         dictionaryEnd = bytePosTerm;
@@ -266,12 +305,8 @@ public class SPIMI {
     }
     private ArrayList<Integer> getPostingFromLine(String line){
         if (line==null)return null;
-        String[] nums = line.split(" : ")[1].replaceAll("\\[", "").replaceAll("]","").split(", ");
-        ArrayList<Integer> res = new ArrayList<>();
-        for (String s: nums){
-            res.add(Integer.valueOf(s));
-        }
-        return res;
+        ArrayList<Integer> nums = decode(Base64.getDecoder().decode(line.split(" : ")[1]));
+        return nums;
     }
 
     private void createBlocks(){
@@ -281,26 +316,36 @@ public class SPIMI {
     }
     private void createBlock(){
 
-        Tokenizer tokenizer = new Tokenizer(null);
 
-        int initialMemory = (int) java.lang.Runtime.getRuntime().freeMemory();
-        int usedMemory = 0;
-        Map<String, ArrayList<Integer>> partialDictionary = new TreeMap<>();
-        while(usedMemory < this.memorySize && this.directoryIterator.hasNext()){
-            usedMemory = initialMemory - (int) java.lang.Runtime.getRuntime().freeMemory();
+
+
+
+        long initialMemory = java.lang.Runtime.getRuntime().freeMemory();
+        long usedMemory = 0;
+        Map<String, ArrayList<Integer>> partialDictionary = new HashMap<>();
+        while((usedMemory < this.memorySize) && this.directoryIterator.hasNext()){
+
             Path p = directoryIterator.next();
+
             //filePaths.add(p);
             docId++;
-            //System.out.println("Documents indexed: " + docId);
+            if (docId%1000 == 0){
+                System.out.println("Documents indexed: " + docId);
+                System.out.println((System.nanoTime()-startTime)/1000000000 + " seconds to index");
+                System.out.println(getGarbageCollectionTime() + " in GC");
+                System.out.println(blockNumber + " block");
+            }
+
             if (p.toString().endsWith(".txt")){
                 tokenizer.setFilename(p);
                 tokenizer.readDocument(encoding);
-                ArrayList<String> tokens = tokenizer.getTokens();
-                for (String t:tokens){
-                    addToDictionary(partialDictionary,t,docId);
+                for (int i = 0; i < tokenizer.tokens.size(); i++){
+                    addToDictionary(partialDictionary,tokenizer.tokens.get(i),docId);
                 }
             }
+            usedMemory = initialMemory - java.lang.Runtime.getRuntime().freeMemory();
         }
+
         this.blockNumber++;
         writeBlockToFile(partialDictionary,blockNumber);
 
@@ -320,46 +365,55 @@ public class SPIMI {
             }
         }
     }
-
     private void addToPosting(ArrayList<Integer> posting, int docId, int num){
-        for (int i = 0 ; i < posting.size(); i+=2){
-            if (posting.get(i)==docId){
-                posting.set(i+1, posting.get(i+1)+num);
-                return;
-            }
-            if (posting.get(i)>docId){
-                posting.add(i, docId);
-                posting.add(i+1,num);
+        if (docId > posting.get(posting.size()-2)){
+            posting.add(docId);
+            posting.add(num);
+            return;
+        }
+        if (docId < posting.get(0)){
+            posting.add(0, docId);
+            posting.add(1,num);
+            return;
+        }
+        int low = 0;
+        int high = posting.size()-2;
+
+        while (low <= high) {
+            int mid = low  + ((high - low) / 2);
+            mid -= mid%2;
+            if (posting.get(mid) < docId) {
+                low = mid + 2;
+            } else if (posting.get(mid) > docId) {
+                high = mid - 2;
+            } else if (posting.get(mid) == docId) {
+                posting.set(mid+1, posting.get(mid+1)+num);
                 return;
             }
         }
-        posting.add(docId);
-        posting.add(num);
+        posting.add(low, docId);
+        posting.add(low+1,num);
     }
     private void writeBlockToFile(Map<String,ArrayList<Integer>> dictionary, int block){
-
-        Path file = Path.of("src/blocks/block"+block+".txt");
-
-        //System.out.println("Writing block "+ block);
-
-
-        dictionary.remove("");
-
-        List<String> keys = new ArrayList<>(dictionary.keySet());
-        Collections.sort(keys);
-
-        List<String> lines = new ArrayList<>();
-        for(String key : keys){
-            String index = key + " : " + dictionary.get(key).toString();
-            lines.add(index);
-        }
         try {
-            Files.write(file, lines);
+
+            FileOutputStream fileOutputStream = new FileOutputStream("src/blocks/block"+block+".txt");
+            //System.out.println("Writing block "+ block);
+            dictionary.remove("");
+            ArrayList<String> keys = new ArrayList();
+            keys.addAll(dictionary.keySet());
+            Collections.sort(keys);
+            for(int i = 0; i < keys.size(); i++){
+                fileOutputStream.write((keys.get(i) + " : ").getBytes(encoding));
+                fileOutputStream.write(Base64.getEncoder().encodeToString(encode(dictionary.get(keys.get(i)))).getBytes());
+                fileOutputStream.write(("\n").getBytes(encoding));
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    private static byte[] encodeNumber(int n) {
+    public static byte[] encodeNumber(int n) {
         if (n == 0) {
             return new byte[]{0};
         }

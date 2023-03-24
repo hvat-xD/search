@@ -13,7 +13,7 @@ public class Tokenizer {
     private Path fileName;
     private String fileContents;
 
-    private ArrayList<String> tokens;
+    public ArrayList<String> tokens;
 
     public ArrayList<String> getTokens() {
         return tokens;
@@ -40,18 +40,14 @@ public class Tokenizer {
         this.fileName = filename;
     }
 
-    //Reads the file 
-    private String readFile(Charset encoding) throws IOException {
-        byte[] encoded = Files.readAllBytes(fileName);
-        return new String(encoded, encoding);
-    }
+
+
 
 
     public void readDocument(Charset charset) {
-        String fileContents;
         try {
-            fileContents = this.readFile(charset);
-            this.fileContents = fileContents;
+            byte[] encoded = Files.readAllBytes(fileName);
+            this.fileContents = new String(encoded, charset);
             this.tokenizeDocument();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -61,7 +57,6 @@ public class Tokenizer {
 
     private void tokenizeDocument() {
         tokens = new ArrayList<>();
-
         tokens.addAll(List.of(fileContents.replaceAll("[^a-zA-Z]", " ").toLowerCase().split("\\s+")));
     }
 
