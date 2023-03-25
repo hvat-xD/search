@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.log;
@@ -46,7 +47,7 @@ public class SPIMI {
         if (!collectionBase.isDirectory())throw new NotDirectoryException(path);
         directoryIterator = Files.newDirectoryStream(Path.of(path)).iterator();
     }
-    public ArrayList<Path> getDocumentsOfPosting(ArrayList<Integer> posting) {
+    public ArrayList<Path> getDocumentsOfPosting(ArrayList<Double> posting) {
         ArrayList<Path> paths = new ArrayList<>();
         try {
             Iterator<Path> dIter = Files.newDirectoryStream(collectionBase.toPath()).iterator();
@@ -65,6 +66,23 @@ public class SPIMI {
 
         return paths;
     }
+    public ArrayList<Path> search(String query){
+        ArrayList<Path> res = new ArrayList<>();
+        ArrayList<Double> relevant = findRelevant(query);
+        ArrayList<Path> paths = getDocumentsOfPosting(relevant);
+        for (int j = 0; j < 10 ;j ++){
+            int maxI = 0;
+            for (int i = 0; i < relevant.size(); i+=2){
+                if (relevant.get(i+1) > relevant.get(maxI+1))maxI = i;
+            }
+            res.add(paths.get(maxI/2));
+            relevant.remove(maxI);
+            relevant.remove(maxI);
+            paths.remove(maxI/2);
+        }
+        return res;
+    }
+
     public void generateIndex() {
         if (!forceBuild){
             if (new File("src/changed.txt").exists()){
@@ -95,7 +113,8 @@ public class SPIMI {
         }
         return collectionTime;
     }
-    public ArrayList<Integer> searchWord(String word){
+    public ArrayList<Double> searchWord(String word){
+        ArrayList<Double> casted = new ArrayList<>();
         int low = 0, high = dictionaryPositions.size()-1;
         while (low<=high){
             int mid = low + ((high - low) /2);
@@ -106,7 +125,12 @@ public class SPIMI {
                 high = mid - 1;
             }
             else if(getTerm(mid).equals(word)){
-                return getPosting(mid);
+                casted = (ArrayList<Double>) getPosting(mid).parallelStream().mapToDouble(i->i)
+                        .boxed().collect(Collectors.toList());
+                for (int i = 1; i < casted.size(); i+=2){
+                    casted.set(i, casted.get(i)*dictionaryPositions.get(mid).idf);
+                }
+                return casted;
             }
         }
         return new ArrayList<>();
@@ -170,30 +194,6 @@ public class SPIMI {
         }
         return readFromDictionary(dictionaryPositions.get(i).bytePosTerm, dictionaryPositions.get(i+1).bytePosTerm-dictionaryPositions.get(i).bytePosTerm);
     }
-
-    public ArrayList<String> getTerms(){
-        ArrayList<String> words = new ArrayList<>();
-
-        for (int i = 0; i <  dictionaryPositions.size() - 1; i++){
-            DictionaryPosition cur = dictionaryPositions.get(i);
-            DictionaryPosition nex = dictionaryPositions.get(i+1);
-            words.add(readFromDictionary(cur.bytePosTerm, nex.bytePosTerm-cur.bytePosTerm));
-
-        }
-
-        words.add(readFromDictionary(dictionaryPositions.get( dictionaryPositions.size()-1).bytePosTerm, dictionaryEnd -dictionaryPositions.get( dictionaryPositions.size()-1).bytePosTerm));
-        return words;
-    }
-    public ArrayList<ArrayList<Integer>> getPostings(){
-        ArrayList<ArrayList<Integer>> postings = new ArrayList<>();
-        for (int i = 0; i < dictionaryPositions.size() -1; i++){
-            DictionaryPosition cur = dictionaryPositions.get(i);
-            DictionaryPosition nex = dictionaryPositions.get(i+1);
-            postings.add(readFromPostings(cur.bytePosList, nex.bytePosList-cur.bytePosList));
-        }
-        postings.add(readFromPostings(dictionaryPositions.get( dictionaryPositions.size()-1).bytePosList, postingsEnd - dictionaryPositions.get( dictionaryPositions.size()-1).bytePosList));
-        return postings;
-    }
     private String readFromDictionary(int posStart, int len){
         RandomAccessFile randomAccessFile;
         byte[] bytes = new byte[len];
@@ -225,6 +225,49 @@ public class SPIMI {
             throw new RuntimeException(e);
         }
         return decode(bytes);
+    }
+    public ArrayList<Double> findRelevant(String query){
+        String[] words = query.split("\\s+");
+        ArrayList<ArrayList<Double>> postings = new ArrayList<>();
+        ArrayList<Iterator<Double>> iterators = new ArrayList<>();
+        ArrayList<Double> currentDocs = new ArrayList<>();
+        ArrayList<Double> res = new ArrayList<>();
+        for (String w : words){
+            postings.add(searchWord(w));
+            if (!postings.get(postings.size()-1).isEmpty()) {
+                iterators.add(postings.get(postings.size() - 1).iterator());
+                currentDocs.add(iterators.get(iterators.size() - 1).next());
+            } else postings.remove(postings.size()-1);
+        }
+
+        while(true){
+            if (iterators.isEmpty()){
+                break;
+            }
+            Double minDoc = currentDocs.get(0);
+
+            for (int i = 1; i < currentDocs.size(); i++){
+                if (currentDocs.get(i)<minDoc)minDoc=currentDocs.get(i);
+            }
+
+            Double tfIdfSum = 0.0;
+            for (int i = 0; i < currentDocs.size(); i++){
+                if (currentDocs.get(i).equals(minDoc)){
+                    tfIdfSum+=iterators.get(i).next();
+                    if (iterators.get(i).hasNext()){
+                        currentDocs.set(i, iterators.get(i).next());
+                    }
+                    else {
+                        currentDocs.remove(i);
+                        iterators.remove(i);
+                        i--;
+                    }
+                }
+            }
+            res.add(minDoc);
+            res.add(tfIdfSum);
+        }
+        return res;
     }
 
     private void mergeAllBlocks() throws IOException {
@@ -258,8 +301,8 @@ public class SPIMI {
             }
         }
 
-        boolean flag = true;
-        while (flag) {
+
+        while (true) {
             if (readers.isEmpty())break;
 
             String minString = getTermFromLine(currLines.get(0));
@@ -283,14 +326,14 @@ public class SPIMI {
                     else {
                         readers.remove(i);
                         currLines.remove(i);
-
+                        i--;
                     }
 
                 }
             }
             outputDictionary.write(minString.getBytes(encoding));
             outputPostings.write(encode(postings));
-            dictionaryPositions.add(new DictionaryPosition(bytePosTerm, bytePosList));
+            dictionaryPositions.add(new DictionaryPosition(bytePosTerm, bytePosList,Math.log(docId/(postings.size()/2))));
             bytePosTerm+=minString.getBytes(encoding).length;
             bytePosList+=encode(postings).length;
 
@@ -314,7 +357,7 @@ public class SPIMI {
         while (directoryIterator.hasNext())createBlock();
 
     }
-    private void createBlock(){
+    private void createBlock()  {
 
 
 

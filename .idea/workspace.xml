@@ -4,12 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="56c3a39b-8a0c-4f04-b0f4-92512697634b" name="Changes" comment="able to read dictionary from files">
+    <list default="true" id="56c3a39b-8a0c-4f04-b0f4-92512697634b" name="Changes" comment="can get postings and documents containing searched word">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scaling.iml" beforeDir="false" afterPath="$PROJECT_DIR$/scaling.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/DictionaryPosition.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/DictionaryPosition.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/SPIMI.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/SPIMI.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Tokenizer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Tokenizer.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -114,7 +113,9 @@
       <workItem from="1679484941591" duration="2747000" />
       <workItem from="1679561445143" duration="13372000" />
       <workItem from="1679578537614" duration="3067000" />
-      <workItem from="1679651613564" duration="2217000" />
+      <workItem from="1679651613564" duration="2534000" />
+      <workItem from="1679737010672" duration="1922000" />
+      <workItem from="1679767199440" duration="5280000" />
     </task>
     <task id="LOCAL-00001" summary="no proper merge">
       <created>1678143511804</created>
@@ -144,7 +145,14 @@
       <option name="project" value="LOCAL" />
       <updated>1679479881937</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="can get postings and documents containing searched word">
+      <created>1679654043404</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1679654043404</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -166,7 +174,8 @@
     <MESSAGE value="proper merge" />
     <MESSAGE value="shrinked, storing tf" />
     <MESSAGE value="able to read dictionary from files" />
-    <option name="LAST_COMMIT_MESSAGE" value="able to read dictionary from files" />
+    <MESSAGE value="can get postings and documents containing searched word" />
+    <option name="LAST_COMMIT_MESSAGE" value="can get postings and documents containing searched word" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

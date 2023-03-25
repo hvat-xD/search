@@ -14,6 +14,6 @@ public class Main {
             throw new RuntimeException(e);
         }
         spimi.generateIndex();
-        System.out.println(spimi.getDocumentsOfPosting(spimi.searchWord("mid")));
+        System.out.println(spimi.search("kinda mid"));
     }
 }
