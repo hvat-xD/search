@@ -15,26 +15,13 @@ public class Tokenizer {
 
     public ArrayList<String> tokens;
 
-    public ArrayList<String> getTokens() {
-        return tokens;
-    }
 
     public Tokenizer(Path filename) {
         this.fileName = filename;
     }
 
-    // Getters and setters
-    public String getFileContents() {
-        return fileContents;
-    }
 
-    public void setFileContents(String fileContents) {
-        this.fileContents = fileContents;
-    }
 
-    public Path getFilename() {
-        return fileName;
-    }
 
     public void setFilename(Path filename) {
         this.fileName = filename;
@@ -57,7 +44,8 @@ public class Tokenizer {
 
     private void tokenizeDocument() {
         tokens = new ArrayList<>();
-        tokens.addAll(List.of(fileContents.replaceAll("[^a-zA-Z]", " ").toLowerCase().split("\\s+")));
+
+        tokens.addAll(List.of(fileContents.replaceAll("[^a-zA-Z ]", "").toLowerCase().split("\\s+")));
     }
 
 
