@@ -4,12 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="56c3a39b-8a0c-4f04-b0f4-92512697634b" name="Changes" comment="tf-idf relevant search">
-      <change afterPath="$PROJECT_DIR$/src/DocumentHolder.java" afterDir="false" />
+    <list default="true" id="56c3a39b-8a0c-4f04-b0f4-92512697634b" name="Changes" comment="added a coefficient of presence for wfidf calculation.&#10;And yeah tf -&gt; wf">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/SPIMI.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/SPIMI.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Tokenizer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Tokenizer.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,7 +25,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="8afc2e25070b44aa860fc73b0d68fdb03572ab71" />
+        <entry key="$PROJECT_DIR$" value="master" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -118,7 +116,7 @@
       <workItem from="1679737010672" duration="1922000" />
       <workItem from="1679767199440" duration="9060000" />
       <workItem from="1679852802882" duration="597000" />
-      <workItem from="1679940890728" duration="3111000" />
+      <workItem from="1679940890728" duration="8280000" />
     </task>
     <task id="LOCAL-00001" summary="no proper merge">
       <created>1678143511804</created>
@@ -162,7 +160,14 @@
       <option name="project" value="LOCAL" />
       <updated>1679782024851</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="added a coefficient of presence for wfidf calculation.&#10;And yeah tf -&gt; wf">
+      <created>1679944518664</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1679944518664</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -173,7 +178,19 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="test" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
@@ -186,7 +203,8 @@
     <MESSAGE value="able to read dictionary from files" />
     <MESSAGE value="can get postings and documents containing searched word" />
     <MESSAGE value="tf-idf relevant search" />
-    <option name="LAST_COMMIT_MESSAGE" value="tf-idf relevant search" />
+    <MESSAGE value="added a coefficient of presence for wfidf calculation.&#10;And yeah tf -&gt; wf" />
+    <option name="LAST_COMMIT_MESSAGE" value="added a coefficient of presence for wfidf calculation.&#10;And yeah tf -&gt; wf" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

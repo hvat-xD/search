@@ -62,7 +62,7 @@ public class SPIMI {
 
         return paths;
     }
-    public ArrayList<Path> search(String query){
+    public ArrayList<Path> search(String query, int count){
         query = query.toLowerCase();
         ArrayList<Path> res = new ArrayList<>();
         ArrayList<DocumentHolder> docs = new ArrayList<>();
@@ -74,7 +74,7 @@ public class SPIMI {
         docs.sort(Comparator.comparingDouble(o -> o.wfIdf));
 
         for (int i = docs.size()-1; i >=0; i--){
-            if (docs.size()-1 - i > 100)break;
+            if (docs.size()-1 - i > count)break;
             res.add(docs.get(i).path);
         }
         return res;
