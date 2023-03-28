@@ -26,6 +26,7 @@ public class Main {
             BufferedReader bufferedReaderEv = new BufferedReader(new FileReader("src/cranqrel"));
             String queryP = bufferedReaderQry.readLine();
             String evalL = bufferedReaderEv.readLine();
+            double Pavg = 0, Ravg = 0;
             ArrayList<String> query = new ArrayList<>();
             int cur = 1;
             while ((queryP = bufferedReaderQry.readLine())!=null){
@@ -60,7 +61,10 @@ public class Main {
                         else fp++;
                     }
                     double P = tp/(tp+fp);
-                    double R = tp/(double) (counter-1);
+                    double R = (tp==0)?0:tp/(double) (counter-1);
+                    Pavg+=P;
+                    Ravg+=R;
+
                     System.out.println("query #" + cur + " P = " + P + " R = " + R);
                     query.clear();
                     cur++;
@@ -69,6 +73,7 @@ public class Main {
                     query.add(queryP);
                 }
             }
+            System.out.println("Average P = " + Pavg/224 + " Average R = " + Ravg/224);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

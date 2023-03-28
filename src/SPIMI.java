@@ -221,7 +221,7 @@ public class SPIMI {
         return decode(bytes);
     }
     public ArrayList<Double> findRelevant(String query){
-        double coefOfPresence = 0.5;
+        double coefOfPresence = 0.3;
         String[] words = query.split("\\s+");
         ArrayList<ArrayList<Double>> postings = new ArrayList<>();
         ArrayList<Iterator<Double>> iterators = new ArrayList<>();
