@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="56c3a39b-8a0c-4f04-b0f4-92512697634b" name="Changes" comment="test branch with crancfild collection">
+      <change afterPath="$PROJECT_DIR$/src/DockVector.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/SPIMI.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/SPIMI.java" afterDir="false" />
@@ -25,7 +26,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="master" />
+        <entry key="$PROJECT_DIR$" value="test" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -117,6 +118,8 @@
       <workItem from="1679767199440" duration="9060000" />
       <workItem from="1679852802882" duration="597000" />
       <workItem from="1679940890728" duration="8822000" />
+      <workItem from="1680880022164" duration="2272000" />
+      <workItem from="1680959586570" duration="2880000" />
     </task>
     <task id="LOCAL-00001" summary="no proper merge">
       <created>1678143511804</created>
@@ -191,7 +194,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="test" />
+                        <option value="vectorspace" />
                       </list>
                     </value>
                   </entry>
@@ -221,6 +224,29 @@
           <properties class="java.lang.IndexOutOfBoundsException" package="java.lang" />
           <option name="timeStamp" value="1" />
         </breakpoint>
+        <line-breakpoint enabled="true" type="java-method">
+          <url>file://$PROJECT_DIR$/src/SPIMI.java</url>
+          <line>370</line>
+          <properties class="SPIMI" method="createBlock">
+            <option name="EMULATED" value="true" />
+            <option name="WATCH_EXIT" value="false" />
+          </properties>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-method">
+          <url>file://$PROJECT_DIR$/src/SPIMI.java</url>
+          <line>36</line>
+          <properties class="SPIMI" method="&lt;init&gt;">
+            <option name="EMULATED" value="true" />
+            <option name="WATCH_EXIT" value="false" />
+          </properties>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/SPIMI.java</url>
+          <line>50</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>

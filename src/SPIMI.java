@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 
 import static java.lang.Math.log;
+import static java.lang.Math.sqrt;
 
 
 public class SPIMI {
@@ -31,8 +32,10 @@ public class SPIMI {
     boolean forceBuild;
     //ArrayList<Path> filePaths;
     long startTime;
+    ArrayList<DockVector> documentVectors;
 
     public SPIMI(String path, long memorySize, boolean forceBuild) throws IOException {
+        this.documentVectors = new ArrayList<>();
         this.startTime = System.nanoTime();
         this.dictionaryPositions = new ArrayList<>();
         //this.filePaths = new ArrayList<>();
@@ -42,6 +45,25 @@ public class SPIMI {
         collectionBase = new File(path);
         if (!collectionBase.isDirectory())throw new NotDirectoryException(path);
         directoryIterator = Files.newDirectoryStream(Path.of(path)).iterator();
+    }
+
+    private void createVectorSpace() throws IOException{
+        int leadersNum = (int) sqrt(docId);
+        Iterator<Path> iterator = Files.newDirectoryStream(collectionBase.toPath()).iterator();
+        int bytePos = 0;
+
+        for (int i = 0; i < leadersNum; i++){
+            Map<String, Integer> vector = new HashMap<>();
+            Path doc = iterator.next();
+            if (doc.toString().endsWith(".txt")){
+                tokenizer.setFilename(doc);
+                tokenizer.readDocument(encoding);
+                for (int j = 0; j < tokenizer.tokens.size(); j++){
+                    vector.put(tokenizer.tokens.get(i), (vector.get(tokenizer.tokens.get(i))==null)?1:vector.get(tokenizer.tokens.get(i))+1);
+                }
+                System.out.println(vector);
+            }
+        }
     }
     public ArrayList<Path> getDocumentsOfPosting(ArrayList<Double> posting) {
         ArrayList<Path> paths = new ArrayList<>();
@@ -145,6 +167,7 @@ public class SPIMI {
             Files.createDirectories(Path.of("src/blocks"));
             createBlocks();
             mergeAllBlocks();
+            createVectorSpace();
             serializePositions();
         } catch (IOException e) {
             try {
@@ -346,11 +369,6 @@ public class SPIMI {
 
     }
     private void createBlock()  {
-
-
-
-
-
         long initialMemory = java.lang.Runtime.getRuntime().freeMemory();
         long usedMemory = 0;
         Map<String, ArrayList<Integer>> partialDictionary = new HashMap<>();
@@ -358,7 +376,7 @@ public class SPIMI {
 
             Path p = directoryIterator.next();
 
-            //filePaths.add(p);
+
             docId++;
             if (docId%1000 == 0){
                 System.out.println("Documents indexed: " + docId);

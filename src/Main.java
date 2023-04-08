@@ -49,7 +49,7 @@ public class Main {
                         evalL = bufferedReaderEv.readLine();
                     }
 
-                    ArrayList<Path> mine = spimi.search(q, (counter-1)*2);
+                    ArrayList<Path> mine = spimi.search(q, (counter-1));
                     ArrayList<Integer> mineInts = new ArrayList<>();
                     for (Path p : mine){
                         mineInts.add(getDocFromPath(p));
