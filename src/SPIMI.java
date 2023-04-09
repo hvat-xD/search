@@ -1,4 +1,6 @@
 
+
+
 import java.io.*;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -12,9 +14,7 @@ import java.util.*;
 
 import java.util.stream.Collectors;
 
-
-import static java.lang.Math.log;
-import static java.lang.Math.sqrt;
+import static java.lang.Math.*;
 
 
 public class SPIMI {
@@ -92,7 +92,7 @@ public class SPIMI {
         while (iterator.hasNext()){
             //saving position in file
             long pos = fos.getChannel().position();
-            Map<String, Integer> vector = new HashMap<>();
+            HashMap<String, Integer> vector = new HashMap<>();
             //opening file
             Path doc = iterator.next();
             //creating vector
@@ -105,10 +105,72 @@ public class SPIMI {
             }
             fos.write(serialize(vector));
 
-            //todo find best match and tie 'em
-
+            //todo wtf is this taking so long
+            double maxSim = 0;
+            int ind = -1;
+            for (int i = 0; i < documentVectors.size(); i++){
+                double maxPrev = maxSim;
+                maxSim = max(maxSim, computeSimilarity(vector, getLeaderVector(i)));
+                if (maxPrev!=maxSim)ind = i;
+            }
+            documentVectors.get(ind).children.add(new DockVector(pos, docNum, (int) (vecFile.length() - pos), false));
+            System.out.println(docNum);
             docNum++;
         }
+    }
+    private double computeSimilarity(HashMap<String,Integer> f, HashMap<String, Integer> s){
+        TreeSet<String> ff = new TreeSet<>(f.keySet());
+        TreeSet<String> ss = new TreeSet<>(s.keySet());
+
+        Iterator<String> fff = ff.iterator();
+        Iterator<String> sss = ss.iterator();
+        double sumWfIdf = 0, sumFirst = 0, sumSecond = 0;
+        String first = fff.next();
+        String second = sss.next();
+        while (sss.hasNext() && fff.hasNext() ){
+
+            Integer tfFirst = f.get(first), tfSecond = s.get(second);
+            if (tfFirst == null) tfFirst = 0;
+            if (tfSecond == null) tfSecond = 0;
+            double wfIdfFirst = ((tfFirst > 0)?1 + log(tfFirst) : 0) * getIdf(first);
+            double wfIdfSecond = ((tfSecond > 0)?1 + log(tfSecond) : 0) * getIdf(second);
+            sumFirst+=wfIdfFirst*wfIdfFirst;
+            sumSecond+=wfIdfSecond*wfIdfSecond;
+            f.put(first, tfFirst==0?null:-tfFirst);
+            s.put(second, tfSecond==0?null:-tfSecond);
+            if (first.equals(second)){
+                sumWfIdf+=wfIdfFirst*wfIdfSecond;
+                first = fff.next();
+                second = sss.next();
+            } else if (first.compareTo(second)<0) {
+                first = fff.next();
+            } else {
+                second = sss.next();
+            }
+        }
+        while (fff.hasNext()){
+            first = fff.next();
+            Integer tfFirst = f.get(first);
+            double wfIdfFirst = ((tfFirst > 0)?1 + log(tfFirst) : 0) * getIdf(first);
+            sumFirst+=wfIdfFirst*wfIdfFirst;
+
+        }
+        while (sss.hasNext()){
+            second = sss.next();
+            Integer  tfSecond = s.get(second);
+            double wfIdfSecond = ((tfSecond > 0)?1 + log(tfSecond) : 0) * getIdf(second);
+            sumSecond+=wfIdfSecond*wfIdfSecond;
+        }
+        for (Map.Entry<String, Integer> e : f.entrySet()){
+            e.setValue(e.getValue()==null?null:-e.getValue());
+        }
+        for (Map.Entry<String, Integer> e : s.entrySet()){
+            e.setValue(e.getValue()==null?null:-e.getValue());
+        }
+        return sumWfIdf / (sqrt(sumFirst)*sqrt(sumSecond));
+    }
+    private HashMap<String, Integer> getLeaderVector(int i) throws IOException, ClassNotFoundException {
+        return readVectorFromFIle(documentVectors.get(i).posInDoc, documentVectors.get(i).len);
     }
     private HashMap<String, Integer> readVectorFromFIle(long pos, int len) throws IOException, ClassNotFoundException {
 
@@ -186,8 +248,24 @@ public class SPIMI {
         }
         return collectionTime;
     }
+    public double getIdf(String word){
+        int low = 0, high = dictionaryPositions.size()-1;
+        while (low<=high){
+            int mid = low + ((high - low) /2);
+            if (getTerm(mid).compareTo(word) < 0){
+                low = mid+1;
+            }
+            else if(getTerm(mid).compareTo(word)>0){
+                high = mid - 1;
+            }
+            else if(getTerm(mid).equals(word)){
+                return dictionaryPositions.get(mid).idf;
+            }
+        }
+        return 0;
+    }
     public ArrayList<Double> searchWord(String word) throws IOException {
-        ArrayList<Double> casted = new ArrayList<>();
+        ArrayList<Double> casted;
         int low = 0, high = dictionaryPositions.size()-1;
         while (low<=high){
             int mid = low + ((high - low) /2);
@@ -259,13 +337,13 @@ public class SPIMI {
         outputStream.flush();
         outputStream.close();
     }
-    public ArrayList<Integer> getPosting(Integer i) throws IOException {
+    private ArrayList<Integer> getPosting(Integer i) throws IOException {
         if (i == dictionaryPositions.size()-1){
             return readFromPostings(dictionaryPositions.get(i).bytePosList, postingsEnd - dictionaryPositions.get(i).bytePosList);
         }
         return readFromPostings(dictionaryPositions.get(i).bytePosList, dictionaryPositions.get(i+1).bytePosList - dictionaryPositions.get(i).bytePosList);
     }
-    public String getTerm(Integer i){
+    private String getTerm(Integer i){
         if (i == dictionaryPositions.size()-1){
             return readFromDictionary(dictionaryPositions.get(i).bytePosTerm, dictionaryEnd -dictionaryPositions.get(i).bytePosTerm);
         }

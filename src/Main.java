@@ -20,7 +20,7 @@ public class Main {
 
         SPIMI spimi;
         try {
-            spimi = new SPIMI("src/cranCol",50000000 ,true);
+            spimi = new SPIMI("src/collection2",50000000 ,true);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

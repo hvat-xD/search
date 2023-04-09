@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="56c3a39b-8a0c-4f04-b0f4-92512697634b" name="Changes" comment="start branch for vector space">
+    <list default="true" id="56c3a39b-8a0c-4f04-b0f4-92512697634b" name="Changes" comment="vectors are vectoring">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/DockVector.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/DockVector.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/SPIMI.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/SPIMI.java" afterDir="false" />
     </list>
@@ -124,7 +123,8 @@
       <workItem from="1680880022164" duration="2272000" />
       <workItem from="1680959586570" duration="2880000" />
       <workItem from="1680979715906" duration="1192000" />
-      <workItem from="1681034455252" duration="6369000" />
+      <workItem from="1681034455252" duration="6997000" />
+      <workItem from="1681064048951" duration="6346000" />
     </task>
     <task id="LOCAL-00001" summary="no proper merge">
       <created>1678143511804</created>
@@ -182,7 +182,14 @@
       <option name="project" value="LOCAL" />
       <updated>1679950854621</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="vectors are vectoring">
+      <created>1681041817868</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1681041817868</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -220,7 +227,8 @@
     <MESSAGE value="tf-idf relevant search" />
     <MESSAGE value="added a coefficient of presence for wfidf calculation.&#10;And yeah tf -&gt; wf" />
     <MESSAGE value="test branch with crancfild collection" />
-    <option name="LAST_COMMIT_MESSAGE" value="test branch with crancfild collection" />
+    <MESSAGE value="vectors are vectoring" />
+    <option name="LAST_COMMIT_MESSAGE" value="vectors are vectoring" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -231,17 +239,8 @@
         </breakpoint>
         <line-breakpoint enabled="true" type="java-method">
           <url>file://$PROJECT_DIR$/src/SPIMI.java</url>
-          <line>422</line>
-          <properties class="SPIMI" method="createBlock">
-            <option name="EMULATED" value="true" />
-            <option name="WATCH_EXIT" value="false" />
-          </properties>
-          <option name="timeStamp" value="3" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-method">
-          <url>file://$PROJECT_DIR$/src/SPIMI.java</url>
           <line>36</line>
-          <properties class="SPIMI">
+          <properties class="SPIMI" method="&lt;init&gt;">
             <option name="EMULATED" value="true" />
             <option name="WATCH_EXIT" value="false" />
           </properties>
@@ -249,21 +248,21 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-method">
           <url>file://$PROJECT_DIR$/src/SPIMI.java</url>
-          <line>112</line>
-          <properties class="SPIMI" method="readVectorFromFIle">
-            <option name="EMULATED" value="true" />
-            <option name="WATCH_EXIT" value="false" />
-          </properties>
-          <option name="timeStamp" value="12" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-method">
-          <url>file://$PROJECT_DIR$/src/SPIMI.java</url>
-          <line>288</line>
+          <line>366</line>
           <properties class="SPIMI" method="readFromPostings">
             <option name="EMULATED" value="true" />
             <option name="WATCH_EXIT" value="false" />
           </properties>
           <option name="timeStamp" value="13" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-method">
+          <url>file://$PROJECT_DIR$/src/SPIMI.java</url>
+          <line>120</line>
+          <properties class="SPIMI" method="computeSimilarity">
+            <option name="EMULATED" value="true" />
+            <option name="WATCH_EXIT" value="false" />
+          </properties>
+          <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/SPIMI.java</url>
