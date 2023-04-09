@@ -46,24 +46,78 @@ public class SPIMI {
         if (!collectionBase.isDirectory())throw new NotDirectoryException(path);
         directoryIterator = Files.newDirectoryStream(Path.of(path)).iterator();
     }
+    private static Object deserialize(byte[] data) throws IOException, ClassNotFoundException {
 
-    private void createVectorSpace() throws IOException{
+        ObjectInputStream ois = null;
+        ois = new ObjectInputStream(new ByteArrayInputStream(data));
+
+        return ois.readObject();
+    }
+    public static byte[] serialize(Object obj) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ObjectOutputStream os = new ObjectOutputStream(out);
+        os.writeObject(obj);
+        return out.toByteArray();
+    }
+
+    private void createVectorSpace() throws IOException, ClassNotFoundException {
+        File vecFile = new File("src/vectorspace.f");
+        System.out.println("creating vector space");
         int leadersNum = (int) sqrt(docId);
         Iterator<Path> iterator = Files.newDirectoryStream(collectionBase.toPath()).iterator();
-        int bytePos = 0;
+        FileOutputStream fos = new FileOutputStream("src/vectorspace.f");
 
-        for (int i = 0; i < leadersNum; i++){
+        int docNum = 0;
+        while (docNum<leadersNum){
+            //saving position in file
+            long pos = fos.getChannel().position();
             Map<String, Integer> vector = new HashMap<>();
+            //opening file
             Path doc = iterator.next();
+            //creating vector
             if (doc.toString().endsWith(".txt")){
                 tokenizer.setFilename(doc);
                 tokenizer.readDocument(encoding);
                 for (int j = 0; j < tokenizer.tokens.size(); j++){
-                    vector.put(tokenizer.tokens.get(i), (vector.get(tokenizer.tokens.get(i))==null)?1:vector.get(tokenizer.tokens.get(i))+1);
+                    vector.put(tokenizer.tokens.get(j), (vector.get(tokenizer.tokens.get(j))==null)?1:vector.get(tokenizer.tokens.get(j))+1);
                 }
-                System.out.println(vector);
             }
+
+
+            //writing vector
+            fos.write(serialize(vector));
+            documentVectors.add(new DockVector(pos, docNum, (int) (vecFile.length() - pos), true));
+            docNum++;
         }
+        while (iterator.hasNext()){
+            //saving position in file
+            long pos = fos.getChannel().position();
+            Map<String, Integer> vector = new HashMap<>();
+            //opening file
+            Path doc = iterator.next();
+            //creating vector
+            if (doc.toString().endsWith(".txt")){
+                tokenizer.setFilename(doc);
+                tokenizer.readDocument(encoding);
+                for (int j = 0; j < tokenizer.tokens.size(); j++){
+                    vector.put(tokenizer.tokens.get(j), (vector.get(tokenizer.tokens.get(j))==null)?1:vector.get(tokenizer.tokens.get(j))+1);
+                }
+            }
+            fos.write(serialize(vector));
+
+            //todo find best match and tie 'em
+
+            docNum++;
+        }
+    }
+    private HashMap<String, Integer> readVectorFromFIle(long pos, int len) throws IOException, ClassNotFoundException {
+
+        byte[] bytes = new byte[len];
+        RandomAccessFile randomAccessFile = new RandomAccessFile("src/vectorspace.f","r");
+        randomAccessFile.seek(pos);
+        randomAccessFile.read(bytes);
+        randomAccessFile.close();
+        return (HashMap<String, Integer>) deserialize(bytes);
     }
     public ArrayList<Path> getDocumentsOfPosting(ArrayList<Double> posting) {
         ArrayList<Path> paths = new ArrayList<>();
@@ -84,7 +138,7 @@ public class SPIMI {
 
         return paths;
     }
-    public ArrayList<Path> search(String query, int count){
+    public ArrayList<Path> search(String query, int count) throws IOException {
         query = query.toLowerCase();
         ArrayList<Path> res = new ArrayList<>();
         ArrayList<DocumentHolder> docs = new ArrayList<>();
@@ -132,7 +186,7 @@ public class SPIMI {
         }
         return collectionTime;
     }
-    public ArrayList<Double> searchWord(String word){
+    public ArrayList<Double> searchWord(String word) throws IOException {
         ArrayList<Double> casted = new ArrayList<>();
         int low = 0, high = dictionaryPositions.size()-1;
         while (low<=high){
@@ -175,6 +229,8 @@ public class SPIMI {
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
 
     }
@@ -203,7 +259,7 @@ public class SPIMI {
         outputStream.flush();
         outputStream.close();
     }
-    public ArrayList<Integer> getPosting(Integer i){
+    public ArrayList<Integer> getPosting(Integer i) throws IOException {
         if (i == dictionaryPositions.size()-1){
             return readFromPostings(dictionaryPositions.get(i).bytePosList, postingsEnd - dictionaryPositions.get(i).bytePosList);
         }
@@ -230,20 +286,16 @@ public class SPIMI {
 
         return new String(bytes,encoding);
     }
-    private ArrayList<Integer> readFromPostings(int posStart, int len){
-        RandomAccessFile randomAccessFile;
+    private ArrayList<Integer> readFromPostings(int posStart, int len) throws IOException{
         byte[] bytes = new byte[len];
-        try {
-            randomAccessFile = new RandomAccessFile("src/postings.f","r");
-            randomAccessFile.seek(posStart);
-            randomAccessFile.read(bytes);
-            randomAccessFile.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        RandomAccessFile randomAccessFile = new RandomAccessFile("src/postings.f","r");
+        randomAccessFile.seek(posStart);
+        randomAccessFile.read(bytes);
+        randomAccessFile.close();
+
         return decode(bytes);
     }
-    public ArrayList<Double> findRelevant(String query){
+    public ArrayList<Double> findRelevant(String query) throws IOException {
         double coefOfPresence = 0.3;
         String[] words = query.split("\\s+");
         ArrayList<ArrayList<Double>> postings = new ArrayList<>();

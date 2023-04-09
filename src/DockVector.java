@@ -2,10 +2,12 @@ import java.util.ArrayList;
 
 public class DockVector {
     int docId;
-    int posInDoc;
+    int len;
+    long posInDoc;
     ArrayList<DockVector> children;
 
-    public DockVector(int posInDoc, int docId, boolean leader) {
+    public DockVector(long posInDoc, int docId, int len, boolean leader) {
+        this.len = len;
         this.posInDoc = posInDoc;
         this.docId = docId;
         if (leader)children = new ArrayList<>();

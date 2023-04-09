@@ -20,63 +20,23 @@ public class Main {
 
         SPIMI spimi;
         try {
-            spimi = new SPIMI("src/cranCol",50000000 ,false);
-            spimi.generateIndex();
-            BufferedReader bufferedReaderQry = new BufferedReader(new FileReader("src/cran.qry"));
-            BufferedReader bufferedReaderEv = new BufferedReader(new FileReader("src/cranqrel"));
-            String queryP = bufferedReaderQry.readLine();
-            String evalL = bufferedReaderEv.readLine();
-            double Pavg = 0, Ravg = 0;
-            ArrayList<String> query = new ArrayList<>();
-            int cur = 1;
-            while ((queryP = bufferedReaderQry.readLine())!=null){
-                if (queryP.startsWith(".I")){
-                    String q = "";
-                    for (String s : query){
-                        q= q+s;
-                    }
-                    q = q.substring(0, q.length()-1);
-
-                    ArrayList<Integer> relevantDocs = new ArrayList<>();
-                    int counter = 0;
-                    while (Integer.parseInt(evalL.split("\\s+")[0]) == cur){
-
-                        String[] what = evalL.split(" ");
-                        if (!what[2].equals("-1")){
-                            relevantDocs.add(Integer.parseInt(what[1]));
-                            counter++;
-                        }
-                        evalL = bufferedReaderEv.readLine();
-                    }
-
-                    ArrayList<Path> mine = spimi.search(q, (counter-1));
-                    ArrayList<Integer> mineInts = new ArrayList<>();
-                    for (Path p : mine){
-                        mineInts.add(getDocFromPath(p));
-                    }
-
-                    double tp = 0, fp = 0;
-                    for (int m : mineInts){
-                        if (relevantDocs.contains(m))tp++;
-                        else fp++;
-                    }
-                    double P = tp/(tp+fp);
-                    double R = (tp==0)?0:tp/(double) (counter-1);
-                    Pavg+=P;
-                    Ravg+=R;
-
-                    System.out.println("query #" + cur + " P = " + P + " R = " + R);
-                    query.clear();
-                    cur++;
-                }
-                else if (!queryP.startsWith(".")){
-                    query.add(queryP);
-                }
-            }
-            System.out.println("Average P = " + Pavg/224 + " Average R = " + Ravg/224);
+            spimi = new SPIMI("src/cranCol",50000000 ,true);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        spimi.generateIndex();
+
+//        System.out.println("Enter your query. Write STOP to end search");
+//        Scanner sc = new Scanner(System.in);
+//        while (true){
+//            String query = sc.nextLine();
+//            if (query.equals("STOP"))break;
+//            try {
+//                System.out.println(query + " : " + spimi.search(query, 10));
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
 
 
 
