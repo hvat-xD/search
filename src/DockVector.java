@@ -1,6 +1,7 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class DockVector {
+public class DockVector implements Serializable {
     int docId;
     int len;
     long posInDoc;

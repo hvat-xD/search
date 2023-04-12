@@ -62,7 +62,7 @@ public class SPIMI {
 
     private void createVectorSpace() throws IOException, ClassNotFoundException {
         File vecFile = new File("src/vectorspace.f");
-        System.out.println("creating vector space");
+        System.out.println("Creating Vector Space");
         int leadersNum = (int) sqrt(docId);
         Iterator<Path> iterator = Files.newDirectoryStream(collectionBase.toPath()).iterator();
         FileOutputStream fos = new FileOutputStream("src/vectorspace.f");
@@ -103,71 +103,69 @@ public class SPIMI {
                     vector.put(tokenizer.tokens.get(j), (vector.get(tokenizer.tokens.get(j))==null)?1:vector.get(tokenizer.tokens.get(j))+1);
                 }
             }
-            fos.write(serialize(vector));
 
-            //todo wtf is this taking so long
-            double maxSim = 0;
-            int ind = -1;
-            for (int i = 0; i < documentVectors.size(); i++){
-                double maxPrev = maxSim;
-                maxSim = max(maxSim, computeSimilarity(vector, getLeaderVector(i)));
-                if (maxPrev!=maxSim)ind = i;
+            fos.write(serialize(vector));
+            if (!vector.isEmpty()){
+                double maxSim = -1;
+                int ind = -1;
+                for (int i = 0; i < documentVectors.size(); i++){
+                    double maxPrev = maxSim;
+                    if (documentVectors.get(i).children.size() < sqrt(docId)+1)maxSim = max(maxSim, computeSimilarity(vector, getLeaderVector(i)));
+
+                    if (maxPrev!=maxSim)ind = i;
+                }
+                documentVectors.get(ind).children.add(new DockVector(pos, docNum, (int) (vecFile.length() - pos), false));
             }
-            documentVectors.get(ind).children.add(new DockVector(pos, docNum, (int) (vecFile.length() - pos), false));
-            System.out.println(docNum);
+
             docNum++;
         }
     }
     private double computeSimilarity(HashMap<String,Integer> f, HashMap<String, Integer> s){
-        TreeSet<String> ff = new TreeSet<>(f.keySet());
-        TreeSet<String> ss = new TreeSet<>(s.keySet());
+        ArrayList<String> ff = new ArrayList<>(f.keySet());
+        ArrayList<String> ss = new ArrayList<>(s.keySet());
+        Collections.sort(ff);
+        Collections.sort(ss);
+        double sumWf = 0, sumFirst = 0, sumSecond = 0;
+        int i = 0, j = 0;
+        while (i < ff.size() && j < ss.size()){
+            if (ff.get(i).compareTo(ss.get(j)) == 0){
 
-        Iterator<String> fff = ff.iterator();
-        Iterator<String> sss = ss.iterator();
-        double sumWfIdf = 0, sumFirst = 0, sumSecond = 0;
-        String first = fff.next();
-        String second = sss.next();
-        while (sss.hasNext() && fff.hasNext() ){
-
-            Integer tfFirst = f.get(first), tfSecond = s.get(second);
-            if (tfFirst == null) tfFirst = 0;
-            if (tfSecond == null) tfSecond = 0;
-            double wfIdfFirst = ((tfFirst > 0)?1 + log(tfFirst) : 0) * getIdf(first);
-            double wfIdfSecond = ((tfSecond > 0)?1 + log(tfSecond) : 0) * getIdf(second);
-            sumFirst+=wfIdfFirst*wfIdfFirst;
-            sumSecond+=wfIdfSecond*wfIdfSecond;
-            f.put(first, tfFirst==0?null:-tfFirst);
-            s.put(second, tfSecond==0?null:-tfSecond);
-            if (first.equals(second)){
-                sumWfIdf+=wfIdfFirst*wfIdfSecond;
-                first = fff.next();
-                second = sss.next();
-            } else if (first.compareTo(second)<0) {
-                first = fff.next();
-            } else {
-                second = sss.next();
+                Integer tfF = f.get(ff.get(i)), tfS = s.get(ss.get(j));
+                double wfF = 1 + log(tfF), wfS = 1 + log(tfS);
+                sumWf += wfF*wfS;
+                sumFirst += wfF*wfF;
+                sumSecond +=wfS*wfS;
+                i++;
+                j++;
+            }
+            else if (ff.get(i).compareTo(ss.get(j)) < 0){
+                Integer tfF = f.get(ff.get(i));
+                double wfF = 1 + log(tfF);
+                sumFirst += wfF*wfF;
+                i++;
+            }
+            else if (ff.get(i).compareTo(ss.get(j)) > 0){
+                Integer tfS = s.get(ss.get(j));
+                double wfS = 1 + log(tfS);
+                sumSecond += wfS*wfS;
+                j++;
             }
         }
-        while (fff.hasNext()){
-            first = fff.next();
-            Integer tfFirst = f.get(first);
-            double wfIdfFirst = ((tfFirst > 0)?1 + log(tfFirst) : 0) * getIdf(first);
-            sumFirst+=wfIdfFirst*wfIdfFirst;
+        while (i < ff.size()){
+            Integer tfF = f.get(ff.get(i));
+            double wfF = 1 + log(tfF);
+            sumFirst += wfF*wfF;
+            i++;
+        }
+        while (j < ss.size()){
+            Integer tfS = s.get(ss.get(j));
+            double wfS = 1 + log(tfS);
+            sumSecond += wfS*wfS;
+            j++;
+        }
 
-        }
-        while (sss.hasNext()){
-            second = sss.next();
-            Integer  tfSecond = s.get(second);
-            double wfIdfSecond = ((tfSecond > 0)?1 + log(tfSecond) : 0) * getIdf(second);
-            sumSecond+=wfIdfSecond*wfIdfSecond;
-        }
-        for (Map.Entry<String, Integer> e : f.entrySet()){
-            e.setValue(e.getValue()==null?null:-e.getValue());
-        }
-        for (Map.Entry<String, Integer> e : s.entrySet()){
-            e.setValue(e.getValue()==null?null:-e.getValue());
-        }
-        return sumWfIdf / (sqrt(sumFirst)*sqrt(sumSecond));
+
+        return sumWf / (sqrt(sumFirst)*sqrt(sumSecond));
     }
     private HashMap<String, Integer> getLeaderVector(int i) throws IOException, ClassNotFoundException {
         return readVectorFromFIle(documentVectors.get(i).posInDoc, documentVectors.get(i).len);
@@ -208,6 +206,47 @@ public class SPIMI {
         ArrayList<Path> paths = getDocumentsOfPosting(relevant);
         for (int i = 0; i < relevant.size(); i+=2){
             docs.add(new DocumentHolder(paths.get(i/2), relevant.get(i).intValue() ,relevant.get(i+1)));
+        }
+        docs.sort(Comparator.comparingDouble(o -> o.wfIdf));
+
+        for (int i = docs.size()-1; i >=0; i--){
+            if (docs.size()-1 - i > count)break;
+            res.add(docs.get(i).path);
+        }
+        return res;
+    }
+    public ArrayList<Path> searchInVectors(String query, int count) throws IOException, ClassNotFoundException {
+        ArrayList<String> words = new ArrayList<>(List.of(query.replaceAll("[^a-zA-Z ]", "").toLowerCase().split("\\s+")));
+        HashMap<String, Integer> vector = new HashMap<>();
+        for (int j = 0; j < words.size(); j++){
+            vector.put(words.get(j), (vector.get(words.get(j))==null)?1:vector.get(words.get(j))+1);
+        }
+        ArrayList<Path> res = new ArrayList<>();
+        ArrayList<DocumentHolder> docs = new ArrayList<>();
+        double maxSim = 0;
+        int ind = -1;
+        for (int i = 0; i < documentVectors.size(); i++){
+            double maxPrev = maxSim;
+            maxSim = max(maxSim, computeSimilarity(vector, getLeaderVector(i)));
+
+            if (maxPrev!=maxSim)ind = i;
+        }
+        if (ind == -1)return new ArrayList<>();
+
+        docs.add(new DocumentHolder(null, documentVectors.get(ind).docId, computeSimilarity(vector, getLeaderVector(ind))));
+
+        for (int i = 0; i < documentVectors.get(ind).children.size(); i++){
+            docs.add(new DocumentHolder(null, documentVectors.get(ind).children.get(i).docId, computeSimilarity(vector, readVectorFromFIle(documentVectors.get(ind).children.get(i).posInDoc, documentVectors.get(ind).children.get(i).len))));
+        }
+        Iterator<Path> dIter = Files.newDirectoryStream(collectionBase.toPath()).iterator();
+        int docId = 0;
+        Path cur = dIter.next();
+        for (int i = 0; i < docs.size(); i++){
+            while(docId!=docs.get(i).docId){
+                cur = dIter.next();
+                docId++;
+            }
+            docs.get(i).path = cur;
         }
         docs.sort(Comparator.comparingDouble(o -> o.wfIdf));
 
@@ -322,6 +361,9 @@ public class SPIMI {
         inputStream = new ObjectInputStream(new FileInputStream("DictionaryEnd.txt"));
         dictionaryEnd = (int) inputStream.readObject();
         inputStream.close();
+        inputStream = new ObjectInputStream(new FileInputStream("Vectorspace.txt"));
+        documentVectors = (ArrayList<DockVector>) inputStream.readObject();
+        inputStream.close();
     }
     private void serializePositions() throws IOException {
         ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("Positions.txt"));
@@ -334,6 +376,10 @@ public class SPIMI {
         outputStream.close();
         outputStream = new ObjectOutputStream(new FileOutputStream("DictionaryEnd.txt"));
         outputStream.writeObject(dictionaryEnd);
+        outputStream.flush();
+        outputStream.close();
+        outputStream = new ObjectOutputStream(new FileOutputStream("Vectorspace.txt"));
+        outputStream.writeObject(documentVectors);
         outputStream.flush();
         outputStream.close();
     }

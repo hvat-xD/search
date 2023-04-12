@@ -20,23 +20,25 @@ public class Main {
 
         SPIMI spimi;
         try {
-            spimi = new SPIMI("src/collection2",50000000 ,true);
+            spimi = new SPIMI("src/collection1",50000000 ,false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         spimi.generateIndex();
 
-//        System.out.println("Enter your query. Write STOP to end search");
-//        Scanner sc = new Scanner(System.in);
-//        while (true){
-//            String query = sc.nextLine();
-//            if (query.equals("STOP"))break;
-//            try {
-//                System.out.println(query + " : " + spimi.search(query, 10));
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
+        System.out.println("Enter your query. Write STOP to end search");
+        Scanner sc = new Scanner(System.in);
+        while (true){
+            String query = sc.nextLine();
+            if (query.equals("STOP"))break;
+            try {
+                System.out.println(query + " : " + spimi.searchInVectors(query, 10));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
 
 
